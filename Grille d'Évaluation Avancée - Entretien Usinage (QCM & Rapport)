@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grille d'Évaluation Avancée - Usinage (QCM & Rapport)</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1000px; margin: auto; padding: 1em; background: #f0f0f0; color: #333; }
+  h1, h2, h3, h4 { color: #003366; }
+  .section-container { margin-bottom: 2em; }
+  .section-title { background-color: #004080; color: white; padding: 0.5em; margin-top: 1.5em; border-radius: 4px; }
+  .question-block { margin-bottom: 1.5em; background: #fff; padding: 1em; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  label { display: block; margin-bottom: 0.5em; font-weight: bold; color: #555; }
+  textarea, input[type="text"], input[type="email"], input[type="date"], input[type="number"] {
+    width: 100%; padding: 0.5em; margin-top: 0.2em; border: 1px solid #ccc;
+    border-radius: 4px; box-sizing: border-box;
+  }
+  input[type="number"].qcm-weight-input { width: 60px !important; margin-left: 5px; display: inline-block; vertical-align: middle;}
+  input[type="number"]#qcmGlobalWeight, input[type="number"]#overallThreshold { width: 70px !important; vertical-align: middle;}
+  select { width: 100%; padding: 0.5em; margin-top: 0.2em; border: 1px solid #ccc; border-radius: 4px; }
+
+  .correct-answer-display { font-size: 0.9em; color: #006400; background-color: #e6ffe6; padding: 0.3em 0.6em; border-radius: 4px; margin-top: 0.5em; border: 1px solid #90ee90; }
+  .qcm-extended-question .correct-answer { font-size: 0.9em; color: #006400; margin-top: 0.3em; font-style: italic;}
+  .qcm-eval-indicator { margin-left: 10px; font-weight: bold; font-size: 0.9em; }
+  .evaluation-ok { color: green; }
+  .evaluation-not-ok { color: red; }
+
+  .score-summary { background: #e0e8f0; border: 1px solid #004080; padding: 1em; margin-top: 2em; border-radius: 6px; }
+  .decision-aid { margin-top: 1.5em; padding-top: 1em; border-top: 1px solid #ccc; }
+  #suggestedDecision { padding: 0.2em 0.4em; border-radius: 3px; font-weight: bold;}
+  .summary-subsection { margin-top:1em; padding-top:0.5em; border-top:1px dashed #ccc;}
+  .summary-subsection:first-child { margin-top:0; padding-top:0; border-top:none;}
+
+  .action-buttons button { margin-top: 1em; padding: 0.7em 1.5em; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; margin-right: 10px;}
+  .action-buttons button:hover { background: #005fa3; }
+  .hidden { display: none !important; }
+
+  .question-tags { font-size: 0.8em; color: #777; margin-top: 5px; }
+  .question-tags span { background-color: #e0e0e0; padding: 2px 5px; border-radius: 3px; margin-right: 5px; display:inline-block; margin-bottom:3px; }
+  .rating-stars span { font-size: 1.5em; cursor: pointer; color: #ccc; margin-right: 2px; }
+  .rating-stars span.selected, .rating-stars span:hover { color: orange; }
+
+  #savedEvaluationsList ul { list-style-type: none; padding-left:0;}
+  #savedEvaluationsList li { margin-bottom: 5px; padding: 5px; background-color: #f9f9f9; border:1px solid #eee; border-radius:3px;}
+  #savedEvaluationsList button { font-size:0.8em; padding: 3px 6px; margin-left:10px; background-color: #6c757d;}
+  #savedEvaluationsList button:hover { background-color: #5a6268;}
+  #savedEvaluationsList button + button { background-color: #ffc107; color:black;}
+  #savedEvaluationsList button + button:hover { background-color: #e0a800;}
+
+  /* Styles pour le mode rapport */
+  body.report-mode input:disabled,
+  body.report-mode textarea[readonly], /* Utiliser readonly pour textarea pour une meilleure lisibilité */
+  body.report-mode select:disabled {
+      background-color: #e9ecef !important; /* Important pour surcharger d'autres styles potentiels */
+      opacity: 1 !important;
+      color: #212529 !important;
+      border: 1px solid #ced4da !important;
+      cursor: default !important;
+      -webkit-appearance: none; /* Essayer de forcer le style sur Safari/Chrome */
+      -moz-appearance: none;
+      appearance: none;
+  }
+  body.report-mode textarea:disabled { /* Spécifique pour textarea si readonly n'est pas suffisant */
+      background-color: #e9ecef !important;
+      color: #212529 !important;
+      opacity: 1 !important;
+  }
+  body.report-mode .rating-stars span {
+      cursor: default !important;
+      pointer-events: none; /* Empêche les clics */
+  }
+  #reportModeMessage {
+    font-weight: bold; color: #d9534f; text-align: center; padding: 10px;
+    background-color: #f2dede; border: 1px solid #ebccd1; border-radius: 4px; margin-bottom: 1em;
+  }
+
+
+  @media print {
+    body { background: #fff; font-size: 10pt; }
+    .section-title { background-color: #ddd !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .question-block, .score-summary, #evaluatorInfo, #initialSetup, #savedEvaluationsSection { box-shadow: none; border: 1px solid #ccc; }
+    .action-buttons, #evaluatorInfo hr, h1 + p, #initialSetup, #savedEvaluationsSection, #levelSelectionBlock, #reportModeMessage { display: none !important; }
+    textarea, input, select { border: 1px solid #999 !important; background-color: #fff !important; }
+    textarea { min-height: 30px !important; overflow-y: visible !important; }
+    .correct-answer-display, .qcm-extended-question .correct-answer { background-color: #f0fff0 !important; border: 1px solid #b0e0b0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 2px; }
+    .qcm-eval-indicator, #suggestedDecision { -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+    .evaluation-ok { color: green !important; }
+    .evaluation-not-ok { color: red !important; }
+    #suggestedDecision[style*="background-color: green"] { color: white !important; background-color: green !important; }
+    #suggestedDecision[style*="background-color: orange"] { color: black !important; background-color: orange !important; }
+    #suggestedDecision[style*="background-color: red"] { color: white !important; background-color: red !important; }
+    .rating-stars span.selected { color: orange !important; }
+    .rating-stars span { color: #ccc !important; }
+    .hidden { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Message pour le mode rapport sera inséré ici par JS -->
+
+<h1>Grille d'Évaluation Avancée - Entretien Usinage (QCM & Rapport)</h1>
+<p>Utilisez cette grille pour noter les réponses du candidat et faciliter la prise de décision.</p>
+
+<div id="initialSetup" class="question-block">
+    <h3>Configuration de l'Évaluation</h3>
+    <div id="levelSelectionBlock">
+        <label for="candidateQCMLevel">Niveau de QCM Technique et Mise en Situation :</label>
+        <select id="candidateQCMLevel">
+            <option value="debutant">QCM Débutant</option>
+            <option value="confirme">QCM Confirmé</option>
+            <option value="expert_oral_complement">QCM Confirmé + Oral Approfondi</option>
+            <option value="oral_uniquement">Oral Uniquement (Pas de QCM Tech/MS)</option>
+        </select>
+    </div>
+    <label for="qcmGlobalWeight">Poids global des QCM dans l'avis suggéré (ex: 0.6 pour 60%):</label>
+    <input type="number" id="qcmGlobalWeight" value="0.6" step="0.05" min="0" max="1">
+    <p style="font-size:0.8em;">Le poids des sections de questions ouvertes sera (1 - Poids QCM) et réparti selon leurs poids relatifs.</p>
+</div>
+
+<div id="evaluatorInfo" class="question-block">
+  <h3>Informations Évaluateur & Candidat</h3>
+  <label for="evaluatorName">Nom de l'Évaluateur :</label>
+  <input type="text" id="evaluatorName" name="evaluatorName" />
+  <label for="candidateNameEval">Nom du Candidat :</label>
+  <input type="text" id="candidateNameEval" name="candidateNameEval" />
+  <label for="interviewDate">Date de l'entretien :</label>
+  <input type="date" id="interviewDate" name="interviewDate" />
+</div>
+
+<form id="evaluationForm">
+  <div id="sectionsContainer">
+    <!-- Les sections et questions seront générées ici par JavaScript -->
+  </div>
+</form>
+
+<div class="score-summary">
+  <h3>Résumé et Prise de Décision</h3>
+  <div class="summary-subsection">
+    <h4>Performance QCM (Total des sections QCM actives)</h4>
+    <p>Score QCM Pondéré : <span id="qcmWeightedScoreDisplay">0</span> / <span id="qcmMaxWeightedScoreDisplay">0</span>
+       (<span id="qcmRawScoreDisplay">0</span> / <span id="qcmTotalDisplay">0</span> bruts)
+    </p>
+  </div>
+
+  <div id="openSectionsSummary" class="summary-subsection">
+      <h4>Évaluation des Sections Ouvertes (Oral / Étoiles)</h4>
+    <!-- Résumé des sections ouvertes généré ici -->
+  </div>
+
+  <div class="decision-aid summary-subsection">
+    <h4>Aide à la Décision Globale</h4>
+    <div>
+      <label for="overallThreshold" style="display:inline-block; margin-right:5px;">Seuil de réussite globale (%) pour "OK pour essai" :</label>
+      <input type="number" id="overallThreshold" value="70" min="0" max="100"> %
+    </div>
+    <div style="margin-top: 0.5em; margin-bottom: 1em;">
+      <strong>Score Global Pondéré (calculé) :</strong> <span id="overallWeightedScore" style="font-weight: bold;">N/A</span> %
+    </div>
+    <div style="margin-top: 0.5em; margin-bottom: 1em;">
+      <strong>Avis Suggéré :</strong> <span id="suggestedDecision">N/A</span>
+    </div>
+    <div>
+      <label for="finalDecision">Décision Finale de l'Évaluateur :</label>
+      <select id="finalDecision" name="finalDecision">
+        <option value="N/A">N/A - En attente</option>
+        <option value="OK_POUR_ESSAI">OK pour essai / Prochaine étape</option>
+        <option value="A_DISCUTER">À discuter / Potentiel avec réserves</option>
+        <option value="NON_POUR_ENTREPRISE">Non pour notre entreprise</option>
+      </select>
+    </div>
+    <div>
+      <label for="decisionComments">Commentaires sur la Décision Finale :</label>
+      <textarea id="decisionComments" name="decisionComments" rows="2" placeholder="Justification..."></textarea>
+    </div>
+  </div>
+
+  <div class="summary-subsection">
+      <h4>Points Forts / Points à Améliorer</h4>
+      <div>
+          <label for="strengthsNotes">Points Forts Observés :</label>
+          <textarea id="strengthsNotes" name="strengthsNotes" rows="2"></textarea>
+      </div>
+      <div>
+          <label for="weaknessesNotes">Points à Améliorer / Réserves :</label>
+          <textarea id="weaknessesNotes" name="weaknessesNotes" rows="2"></textarea>
+      </div>
+  </div>
+
+  <div id="globalNotesSection" class="summary-subsection question-block">
+      <label for="globalNotes">Notes Générales / Impressions Globales sur le Candidat :</label>
+      <textarea id="globalNotes" name="globalNotes" rows="3" placeholder="Comportement, communication, adéquation générale..."></textarea>
+  </div>
+
+  <div class="action-buttons" style="margin-top:1.5em;">
+    <button type="button" id="calculateGlobalScoreBtn">Calculer/Actualiser Score Global & Avis</button>
+    <button type="button" id="saveEvaluationBtn">Sauvegarder Évaluation</button>
+    <button type="button" id="exportEvaluationBtn">Exporter Évaluation (JSON)</button>
+    <button type="button" id="exportCsvBtn">Exporter Évaluation (CSV)</button>
+    <button type="button" id="generateReportLinkBtn">Générer Lien Rapport (Lecture Seule)</button>
+    <button type="button" onclick="window.print()">Imprimer Grille Remplie</button>
+  </div>
+</div>
+
+<div id="savedEvaluationsSection" class="question-block" style="margin-top:2em;">
+    <h3>Évaluations Sauvegardées (LocalStorage)</h3>
+    <div id="savedEvaluationsList">
+        <p>Aucune évaluation trouvée ou erreur de chargement.</p>
+    </div>
+    <button type="button" id="clearAllSavedBtn" style="background-color:#dc3545; margin-top:1em;">Effacer TOUTES les évaluations sauvegardées</button>
+</div>
+
+
+<script>
+// --- CONSTANTES ET CONFIGURATION ---
+const APP_VERSION = "2.3.1_QCM_Rapport_Final"; // Version mise à jour
+const DECISION_STATUS = {
+    NA: "N/A",
+    OK: "OK_POUR_ESSAI",
+    DISCUSS: "A_DISCUTER",
+    REJECT: "NON_POUR_ENTREPRISE"
+};
+const CATEGORIES = {
+    PRESENTATION: "Présentation & Motivation",
+    TECHNIQUE_ORAL: "Compétences Techniques (Oral)",
+    MISE_EN_SITUATION_ORAL: "Mise en Situation (Oral)",
+    TECHNIQUE_QCM_DEB: "Compétences Techniques (QCM Débutant)",
+    TECHNIQUE_QCM_CONF: "Compétences Techniques (QCM Confirmé)",
+    MISE_EN_SITUATION_QCM_DEB: "Mise en Situation (QCM Débutant)",
+    MISE_EN_SITUATION_QCM_CONF: "Mise en Situation (QCM Confirmé)",
+    TECHNIQUE_QCM_GENERAL: "QCM Technique Général",
+    BONUS: "Bonus"
+};
+
+const evaluationStructure = [
+    {
+        id: "s1", title: CATEGORIES.PRESENTATION, type: "open_questions_section", weight: 0.15, isAlwaysVisible: true,
+        questions: [
+            { id: "p1q1", text: "1. Présentation & Parcours en usinage :", placeholder: "Noter les points clés...", rows: 3, tags: ["communication", "expérience"] },
+            { id: "p1q2", text: "2. Motivations pour le métier :", placeholder: "Noter les motivations...", rows: 2, tags: ["motivation"] },
+            { id: "p1q3", text: "3. Machines CN utilisées (marques, types) :", placeholder: "Lister les machines...", rows: 2, tags: ["expérience_cn"] },
+            { id: "p1q4", text: "4. Préférence travail seul/équipe & Pourquoi :", placeholder: "Arguments...", rows: 2, tags: ["soft_skills", "collaboration"] }
+        ]
+    },
+    {
+        id: "s_ct_qcm_debutant", title: CATEGORIES.TECHNIQUE_QCM_DEB, type: "qcm_section", level: "debutant",
+        questions: [
+            { id: 'qcm_ctd_1', text: "1. Que signifie 'CN' dans 'Machine CN' ?", options: { A: "Contrôle Nocif", B: "Commande Numérique", C: "Capacité Nouvelle" }, correctAnswer: 'B', weight: 1, tags:["cn_base", "vocabulaire"] },
+            { id: 'qcm_ctd_2', text: "2. Quel est l'outil principal pour mesurer un diamètre extérieur simple avec une précision courante ?", options: { A: "Règle graduée", B: "Pied à coulisse", C: "Micromètre" }, correctAnswer: 'B', weight: 1, tags:["métrologie_base"] },
+            { id: 'qcm_ctd_3', text: "3. Qu'est-ce qu'un 'brut' en usinage ?", options: { A: "Une pièce finie mais sale", B: "La matière première avant usinage", C: "Un outil de coupe" }, correctAnswer: 'B', weight: 1, tags:["vocabulaire_base"] },
+            { id: 'qcm_ctd_4', text: "4. Si une machine affiche une lumière rouge clignotante, que devez-vous faire en général ?", options: { A: "L'ignorer et continuer", B: "Appuyer sur le bouton d'arrêt d'urgence", C: "Vérifier le manuel ou appeler un responsable" }, correctAnswer: 'C', weight: 2, tags:["sécurité", "réaction"] },
+            { id: 'qcm_ctd_5', text: "5. À quoi sert principalement le liquide de coupe (arrosage) ?", options: { A: "Nettoyer la machine", B: "Refroidir l'outil et la pièce, et évacuer les copeaux", C: "Rendre la pièce plus brillante" }, correctAnswer: 'B', weight: 1, tags:["processus_base", "lubrification"] },
+        ]
+    },
+    {
+        id: "s_ms_qcm_debutant", title: CATEGORIES.MISE_EN_SITUATION_QCM_DEB, type: "qcm_section", level: "debutant",
+        questions: [
+            { id: 'qcm_msd_1', text: "1. Vous trouvez une pièce par terre près de votre machine. Que faites-vous ?", options: { A: "Vous la ramassez et la mettez à la poubelle", B: "Vous la laissez où elle est", C: "Vous la ramassez et demandez à votre responsable à qui elle appartient ou ce qu'il faut en faire" }, correctAnswer: 'C', weight: 1, tags:["responsabilité", "sécurité"] },
+            { id: 'qcm_msd_2', text: "2. Votre collègue vous demande de l'aide alors que vous êtes occupé. Que répondez-vous poliment ?", options: { A: "'Non, je suis occupé.'", B: "'Je termine ce que je fais et j'arrive.' (si possible)", C: "Vous l'ignorez." }, correctAnswer: 'B', weight: 1, tags:["soft_skills", "collaboration"] },
+            { id: 'qcm_msd_3', text: "3. On vous donne un plan simple mais vous ne comprenez pas une indication. Que faites-vous ?", options: { A: "Vous essayez de deviner", B: "Vous demandez une clarification à votre responsable ou à un collègue expérimenté", C: "Vous ne faites pas la pièce" }, correctAnswer: 'B', weight: 2, tags:["communication", "qualité"] },
+        ]
+    },
+    {
+        id: "s_ct_qcm_confirme", title: CATEGORIES.TECHNIQUE_QCM_CONF, type: "qcm_section", level: "confirme",
+        questions: [
+            { id: 'qcm_ctc_1', text: "1. Que signifie la désignation 'H7' dans une cote de tolérance (ex: Ø20 H7) ?", options: { A: "Une dureté de 7 HRC", B: "Un ajustement serré pour un arbre", C: "Une tolérance d'alésage avec une position spécifique (H) et une qualité (7)" }, correctAnswer: 'C', weight: 2, tags:["tolérancement", "lecture_plan"] },
+            { id: 'qcm_ctc_2', text: "2. En programmation CN ISO, quel code est typiquement utilisé pour une interpolation linéaire à vitesse d'avance programmée ?", options: { A: "G00", B: "G01", C: "G02" }, correctAnswer: 'B', weight: 1, tags:["programmation_cn", "gcode"] },
+            { id: 'qcm_ctc_3', text: "3. Quel est l'effet principal d'une vitesse de coupe (Vc) trop faible ?", options: { A: "Usure rapide de l'outil par frottement excessif et possible formation d'arête rapportée", B: "Meilleur état de surface", C: "Surchauffe de la pièce" }, correctAnswer: 'A', weight: 2, tags:["paramètres_coupe", "qualité"] },
+            { id: 'qcm_ctc_4', text: "4. Pour contrôler un filetage intérieur M10x1.5, quel instrument est le plus approprié ?", options: { A: "Un pied à coulisse", B: "Un micromètre d'intérieur", C: "Une jauge tampon filetée M10x1.5 (entre/n'entre pas)" }, correctAnswer: 'C', weight: 1, tags:["métrologie", "filetage"] },
+            { id: 'qcm_ctc_5', text: "5. Quelle est la fonction principale d'un 'correcteur d'outil' (offset) sur une CN ?", options: { A: "Changer la vitesse de rotation de la broche", B: "Compenser l'usure de l'outil ou ajuster sa position géométrique", C: "Sélectionner le prochain outil" }, correctAnswer: 'B', weight: 2, tags:["cn_réglage", "précision"] },
+        ]
+    },
+    {
+        id: "s_ms_qcm_confirme", title: CATEGORIES.MISE_EN_SITUATION_QCM_CONF, type: "qcm_section", level: "confirme",
+        questions: [
+            { id: 'qcm_msc_1', text: "1. Vous constatez une dérive dimensionnelle progressive sur une série de pièces (ex: un diamètre augmente constamment). Quelle est la première action corrective à envisager ?", options: { A: "Relancer le programme CN sans modification", B: "Vérifier l'usure de l'outil et ajuster son correcteur ou le remplacer", C: "Augmenter la vitesse d'avance" }, correctAnswer: 'B', weight: 2, tags:["résolution_problème", "qualité_cn"] },
+            { id: 'qcm_msc_2', text: "2. Une alarme 'Défaut de serrage pièce' s'affiche. Que faites-vous APRÈS avoir mis la machine en sécurité ?", options: { A: "Vous relancez le cycle en espérant que ça passe", B: "Vous ignorez l'alarme et changez de programme", C: "Vous vérifiez le système de bridage, la position de la pièce et les capteurs associés" }, correctAnswer: 'C', weight: 2, tags:["diagnostic_cn", "sécurité"] },
+            { id: 'qcm_msc_3', text: "3. Vous devez usiner une nouvelle matière que vous ne connaissez pas bien, avec des tolérances serrées. Quelle est votre approche ?", options: { A: "Utiliser les mêmes paramètres que pour l'acier standard", B: "Rechercher des données de coupe de base pour cette matière, commencer prudemment et ajuster", C: "Augmenter toutes les vitesses pour gagner du temps" }, correctAnswer: 'B', weight: 1, tags:["préparation", "analyse_risque"] },
+        ]
+    },
+    {
+        id: "s2", title: CATEGORIES.TECHNIQUE_ORAL, type: "open_questions_section", weight: 0.25, isAlwaysVisible: false,
+        questions: [
+            { id: "p2q1", text: "1. Expliquez plus en détail ce que signifie ⌀20 H7 g6 et comment cela affecte l'ajustement.", placeholder: "Approfondir la tolérance...", rows: 2, correctAnswerDisplay: "⌀20 = Diamètre nominal. H7 = Alésage, g6 = Arbre. H7 (alésage) zone au-dessus ligne zéro, g6 (arbre) zone en dessous. Jeu garanti.", tags: ["lecture_plan", "tolérancement_avancé"] },
+            { id: "p2q2", text: "2. Face à un défaut de circularité sur une pièce tournée, quelles pistes investigueriez-vous ?", placeholder: "Causes et solutions...", rows: 2, correctAnswerDisplay: "Ex: Mauvais centrage, bridage incorrect, vibrations, outil mal affûté/positionné, jeu dans les axes...", tags: ["qualité", "diagnostic_tournage"] },
+            { id: "p2q3", text: "3. Actions si pièce non conforme :", placeholder: "Procédure décrite...", rows: 2, correctAnswerDisplay: "Attendu: Arrêt prod, isoler pièce, identifier cause, corriger, informer resp, documenter.", tags: ["qualité", "procédure"] },
+            { id: "p2q4", text: "4. Différence avance, vitesse de coupe, profondeur de passe :", placeholder: "Explication...", rows: 3, correctAnswerDisplay: "Vc: Vitesse relative outil/pièce (m/min). Avance (f): Distance/tour (mm/tr) ou /dent (mm/dt) ou /min (Vf=mm/min). Profondeur (ap): Épaisseur matière/passe (mm).", tags: ["paramètres_coupe"] },
+        ]
+    },
+    {
+        id: "s3", title: CATEGORIES.MISE_EN_SITUATION_ORAL, type: "open_questions_section", weight: 0.20, isAlwaysVisible: false,
+        questions: [
+            { id: "p3q1", text: "1. Comment optimiseriez-vous un programme CN existant pour réduire le temps de cycle tout en maintenant la qualité ?", placeholder: "Stratégies d'optimisation...", rows: 3, correctAnswerDisplay: "Ex: Optimiser trajectoires (G00), réduire passes à vide, combiner outils, augmenter Vc/f si possible, vérifier choix outils.", tags: ["optimisation_cn", "programmation"] },
+            { id: "p3q2", text: "2. Alarme machine inconnue :", placeholder: "Réaction...", rows: 2, correctAnswerDisplay: "Noter code/message, consulter manuel, Reset, vérifier causes simples, ne pas forcer, demander aide.", tags: ["diagnostic", "sécurité"] },
+            { id: "p3q3", text: "3. Aide demandée par collègue (opération délicate en cours) :", placeholder: "Réaction...", rows: 2, correctAnswerDisplay: "Évaluer urgence. Indiquer aide après op. critique. Si urgence absolue & risque, sécuriser sa propre op. avant. Communication.", tags: ["soft_skills", "gestion_priorités"] },
+        ]
+    },
+    {
+        id: "s4", title: CATEGORIES.TECHNIQUE_QCM_GENERAL, type: "qcm_section", isAlwaysVisible: true, // Géré dynamiquement
+        questions: [
+            { id: 'qcm_ext_1', text: "1. Qu’est-ce qu’une cote nominale ?", options: { A: "La cote théorique sans tolérance", B: "La cote mesurée sur la pièce", C: "La cote maximale acceptable" }, correctAnswer: 'A', weight: 1, tags:["vocabulaire_base"] },
+            { id: 'qcm_ext_2', text: "2. Quel matériau est le plus couramment utilisé pour les plaquettes de coupe modernes en usinage intensif ?", options: { A: "Acier rapide (HSS)", B: "Carbure métallique revêtu", C: "Céramique pure" }, correctAnswer: 'B', weight: 1, tags:["outils_coupants"] },
+            { id: 'qcm_ext_3', text: "3. Quel est l’objectif principal du plan de contrôle qualité ?", options: { A: "Assurer la conformité des pièces", B: "Augmenter la vitesse d’usinage", C: "Réduire le temps de réglage machine" }, correctAnswer: 'A', weight: 2, tags:["qualité"] },
+            { id: 'qcm_ext_4', text: "4. En CN, que signifie 'origine pièce' ?", options: { A: "Position de départ de la machine", B: "Point de référence sur la pièce pour les usinages", C: "Position du programme dans la mémoire" }, correctAnswer: 'B', weight: 1, tags:["cn_base"] },
+            { id: 'qcm_ext_15', text: "5. Quelle unité est la plus courante pour la vitesse de coupe (Vc) ?", options: { A: "m/min (ou sfm)", B: "tr/min (ou RPM)", C: "mm" }, correctAnswer: 'A', weight: 1, tags:["paramètres_coupe"] }
+        ]
+    },
+    {
+        id: "s5", title: CATEGORIES.BONUS, type: "open_questions_section", weight: 0.0, isAlwaysVisible: true,
+        questions: [
+            { id: "p5q1", text: "1. Modification programme ISO sur machine (exemple) :", placeholder: "Exemple donné...", rows: 2, tags: ["programmation_cn", "autonomie"] },
+            { id: "p5q2", text: "2. Compétences maintenance 1er niveau (lesquelles) :", placeholder: "Compétences listées...", rows: 2, tags: ["maintenance", "polyvalence"] }
+        ]
+    }
+];
+
+// --- DOM ELEMENTS CACHING ---
+const sectionsContainer = document.getElementById('sectionsContainer');
+const evaluatorNameInput = document.getElementById('evaluatorName');
+const candidateNameEvalInput = document.getElementById('candidateNameEval');
+const interviewDateInput = document.getElementById('interviewDate');
+const globalNotesTextarea = document.getElementById('globalNotes');
+
+const qcmWeightedScoreDisplay = document.getElementById('qcmWeightedScoreDisplay');
+const qcmMaxWeightedScoreDisplay = document.getElementById('qcmMaxWeightedScoreDisplay');
+const qcmRawScoreDisplay = document.getElementById('qcmRawScoreDisplay');
+const qcmTotalDisplay = document.getElementById('qcmTotalDisplay');
+const openSectionsSummaryEl = document.getElementById('openSectionsSummary');
+
+const candidateQCMLevelSelect = document.getElementById('candidateQCMLevel');
+const qcmGlobalWeightInput = document.getElementById('qcmGlobalWeight');
+const overallThresholdInput = document.getElementById('overallThreshold');
+const overallWeightedScoreEl = document.getElementById('overallWeightedScore');
+const suggestedDecisionEl = document.getElementById('suggestedDecision');
+const finalDecisionSelect = document.getElementById('finalDecision');
+const decisionCommentsTextarea = document.getElementById('decisionComments');
+const strengthsNotesTextarea = document.getElementById('strengthsNotes');
+const weaknessesNotesTextarea = document.getElementById('weaknessesNotes');
+
+const calculateGlobalScoreBtn = document.getElementById('calculateGlobalScoreBtn');
+const saveEvaluationBtn = document.getElementById('saveEvaluationBtn');
+const exportEvaluationBtn = document.getElementById('exportEvaluationBtn');
+const exportCsvBtn = document.getElementById('exportCsvBtn');
+const generateReportLinkBtn = document.getElementById('generateReportLinkBtn'); // Récupéré ici
+const savedEvaluationsListEl = document.getElementById('savedEvaluationsList');
+const clearAllSavedBtn = document.getElementById('clearAllSavedBtn');
+
+const initialSetupDiv = document.getElementById('initialSetup');
+const actionButtonsDiv = document.querySelector('.action-buttons');
+const savedEvaluationsSection = document.getElementById('savedEvaluationsSection');
+
+// --- STATE MANAGEMENT ---
+let currentEvaluationData = {};
+let isReportModeActive = false; // Renommé pour clarté
+
+// --- GENERATION DE L'INTERFACE ---
+function generateEvaluationGrid() {
+    sectionsContainer.innerHTML = '';
+    openSectionsSummaryEl.innerHTML = '';
+
+    const selectedLevel = candidateQCMLevelSelect.value;
+
+    evaluationStructure.forEach((section) => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.classList.add('section-container');
+        sectionDiv.id = `section-${section.id}`;
+
+        let isSectionVisible = section.isAlwaysVisible === true;
+        if (!isSectionVisible) { // Si pas toujours visible, on applique la logique de niveau
+            if (selectedLevel === "debutant" && section.level === "debutant" && section.type === "qcm_section") {
+                isSectionVisible = true;
+            } else if (selectedLevel === "confirme" && section.level === "confirme" && section.type === "qcm_section") {
+                isSectionVisible = true;
+            } else if (selectedLevel === "expert_oral_complement") {
+                if (section.level === "confirme" && section.type === "qcm_section") isSectionVisible = true;
+                if ((section.id === "s2" || section.id === "s3") && section.type === "open_questions_section") isSectionVisible = true;
+            } else if (selectedLevel === "oral_uniquement") {
+                if ((section.id === "s2" || section.id === "s3") && section.type === "open_questions_section") isSectionVisible = true;
+                // Pour les QCM spécifiques de niveau, on les cache
+                if (section.id.startsWith("s_ct_qcm_") || section.id.startsWith("s_ms_qcm_")) isSectionVisible = false;
+                // Pour le QCM général (s4), on le cache aussi
+                if (section.id === "s4") isSectionVisible = false;
+            }
+        }
+        // Cas spécifique pour s4 : il est toujours visible SAUF en mode "oral_uniquement"
+        if (section.id === "s4" && selectedLevel === "oral_uniquement") {
+            isSectionVisible = false;
+        } else if (section.id === "s4") { // Sinon (pour debutant, confirme, expert), s4 est visible
+             isSectionVisible = true;
+        }
+
+
+        if (!isSectionVisible) {
+            sectionDiv.classList.add('hidden');
+        }
+
+        const titleH2 = document.createElement('h2');
+        titleH2.classList.add('section-title');
+        titleH2.textContent = `${section.title}`;
+        sectionDiv.appendChild(titleH2);
+
+        if (section.type === "open_questions_section") {
+            section.questions.forEach(q => {
+                const qBlock = document.createElement('div');
+                qBlock.classList.add('question-block');
+                const textareaId = `${section.id}_${q.id}_notes`;
+                qBlock.innerHTML = `
+                    <label for="${textareaId}">${q.text}</label>
+                    <textarea id="${textareaId}" name="${textareaId}" rows="${q.rows || 2}" placeholder="${q.placeholder || 'Noter ici...'}"></textarea>
+                    ${q.correctAnswerDisplay ? `<div class="correct-answer-display">${q.correctAnswerDisplay}</div>` : ''}
+                    ${q.tags ? `<div class="question-tags">Tags: ${q.tags.map(tag => `<span>${tag}</span>`).join('')}</div>` : ''}
+                `;
+                sectionDiv.appendChild(qBlock);
+            });
+
+            const ratingDiv = document.createElement('div');
+            ratingDiv.classList.add('question-block');
+            ratingDiv.innerHTML = `
+                <label for="rating_${section.id}">Évaluation globale de cette section (1-5 étoiles):</label>
+                <div id="rating_${section.id}" class="rating-stars" data-section-id="${section.id}">
+                    ${[1,2,3,4,5].map(star => `<span data-value="${star}">☆</span>`).join('')}
+                </div>
+                <input type="hidden" id="rating_value_${section.id}" name="rating_value_${section.id}" value="0">
+            `;
+            sectionDiv.appendChild(ratingDiv);
+
+            if (isSectionVisible) {
+                const summaryP = document.createElement('p');
+                summaryP.innerHTML = `<strong>${section.title}:</strong> <span id="summary_rating_${section.id}">N/A</span> étoiles`;
+                openSectionsSummaryEl.appendChild(summaryP);
+            }
+
+        } else if (section.type === "qcm_section") {
+            section.questions.forEach((q) => {
+                const qBlock = document.createElement('div');
+                qBlock.classList.add('question-block', 'qcm-extended-question');
+                let optionsHTML = "";
+                for (const optValue in q.options) {
+                    optionsHTML += `<option value="${optValue}">${optValue}) ${q.options[optValue]}</option>`;
+                }
+                qBlock.innerHTML = `
+                    <label for="${q.id}">${q.text}</label>
+                    <select id="${q.id}" name="${q.id}">
+                        <option value="">-- Sélectionner réponse du candidat --</option>
+                        ${optionsHTML}
+                    </select>
+                    <label for="${q.id}_weight" style="display:inline-block; margin-left:10px; font-size:0.8em;">Poids QCM:</label>
+                    <input type="number" id="${q.id}_weight" name="${q.id}_weight" class="qcm-weight-input" value="${q.weight || 1}" min="0" step="1">
+                    <div class="correct-answer">Bonne réponse : ${q.correctAnswer}) ${q.options[q.correctAnswer]}</div>
+                    <span id="${q.id}_indicator" class="qcm-eval-indicator"></span>
+                    ${q.tags ? `<div class="question-tags">Tags: ${q.tags.map(tag => `<span>${tag}</span>`).join('')}</div>` : ''}
+                `;
+                sectionDiv.appendChild(qBlock);
+
+                const selectEl = qBlock.querySelector(`#${q.id}`);
+                selectEl.addEventListener('change', () => {
+                    updateQCMIndicator(selectEl, q.correctAnswer);
+                    if (!isReportModeActive) calculateScoresAndUpdateDecision();
+                });
+                const weightInput = qBlock.querySelector(`#${q.id}_weight`);
+                weightInput.addEventListener('input', () => {
+                    if (!isReportModeActive) calculateScoresAndUpdateDecision();
+                });
+            });
+        }
+        sectionsContainer.appendChild(sectionDiv);
+    });
+    initializeStarRatings();
+    if (!isReportModeActive) {
+        calculateScoresAndUpdateDecision();
+    }
+}
+
+function initializeStarRatings() {
+    document.querySelectorAll('.rating-stars').forEach(starContainer => {
+        const sectionId = starContainer.dataset.sectionId;
+        const hiddenInput = document.getElementById(`rating_value_${sectionId}`);
+        const stars = starContainer.querySelectorAll('span');
+
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                if (isReportModeActive) return;
+                const value = star.dataset.value;
+                if (hiddenInput) hiddenInput.value = value;
+                updateStarDisplay(stars, value);
+                const summarySpan = document.getElementById(`summary_rating_${sectionId}`);
+                if (summarySpan) summarySpan.textContent = `${value}/5`;
+                calculateScoresAndUpdateDecision();
+            });
+            star.addEventListener('mouseover', () => {
+                if (isReportModeActive) return;
+                updateStarDisplay(stars, star.dataset.value, true);
+            });
+            star.addEventListener('mouseout', () => {
+                if (isReportModeActive) return;
+                if (hiddenInput) updateStarDisplay(stars, hiddenInput.value);
+            });
+        });
+    });
+}
+
+function updateStarDisplay(stars, value, isHover = false) {
+    stars.forEach(s => {
+        s.textContent = parseInt(s.dataset.value) <= parseInt(value) ? '★' : '☆';
+        if (!isHover) {
+             s.classList.toggle('selected', parseInt(s.dataset.value) <= parseInt(value));
+        }
+    });
+}
+
+function updateQCMIndicator(selectElement, correctAnswerValue) {
+    const indicator = document.getElementById(`${selectElement.id}_indicator`);
+    if (!indicator) return;
+    if (selectElement.value === "") {
+        indicator.textContent = "";
+        indicator.className = 'qcm-eval-indicator';
+    } else if (selectElement.value === correctAnswerValue) {
+        indicator.textContent = "✔ OK";
+        indicator.className = 'qcm-eval-indicator evaluation-ok';
+    } else {
+        indicator.textContent = "✘ PAS OK";
+        indicator.className = 'qcm-eval-indicator evaluation-not-ok';
+    }
+}
+
+function calculateQCMScore() {
+    let score = 0;
+    let rawScore = 0;
+    let maxWeightedScore = 0;
+    let totalQuestions = 0;
+
+    evaluationStructure.forEach(section => {
+        const sectionDiv = document.getElementById(`section-${section.id}`);
+        if (section.type === "qcm_section" && sectionDiv && !sectionDiv.classList.contains('hidden')) {
+            if (section.questions) {
+                section.questions.forEach(q => {
+                    totalQuestions++;
+                    const selectElement = document.getElementById(q.id);
+                    const weightInput = document.getElementById(`${q.id}_weight`);
+                    const weight = parseInt(weightInput ? weightInput.value : q.weight) || 1;
+                    maxWeightedScore += weight;
+                    if (selectElement && selectElement.value === q.correctAnswer) {
+                        score += weight;
+                        rawScore++;
+                    }
+                });
+            }
+        }
+    });
+
+    qcmWeightedScoreDisplay.textContent = score;
+    qcmMaxWeightedScoreDisplay.textContent = maxWeightedScore;
+    qcmRawScoreDisplay.textContent = rawScore;
+    qcmTotalDisplay.textContent = totalQuestions;
+    return { score, maxWeightedScore, rawScore, totalQuestions };
+}
+
+function calculateOverallWeightedScore() {
+    let totalWeightedScoreContribution = 0;
+    let sumOfGlobalWeightsApplied = 0;
+
+    const qcmResults = calculateQCMScore();
+    const qcmSectionGlobalWeight = parseFloat(qcmGlobalWeightInput.value) || 0.6;
+
+    if (qcmResults.maxWeightedScore > 0) {
+        totalWeightedScoreContribution += (qcmResults.score / qcmResults.maxWeightedScore) * qcmSectionGlobalWeight;
+    }
+    sumOfGlobalWeightsApplied += qcmSectionGlobalWeight;
+
+    let totalRelativeWeightOpenSections = 0;
+    evaluationStructure.forEach(section => {
+        const sectionDiv = document.getElementById(`section-${section.id}`);
+        if (section.type === "open_questions_section" && section.weight !== undefined && sectionDiv && !sectionDiv.classList.contains('hidden')) {
+            totalRelativeWeightOpenSections += section.weight;
+        }
+    });
+
+    const openSectionsGlobalTotalWeight = 1 - qcmSectionGlobalWeight;
+
+    evaluationStructure.forEach(section => {
+        const sectionDiv = document.getElementById(`section-${section.id}`);
+        if (section.type === "open_questions_section" && sectionDiv && !sectionDiv.classList.contains('hidden')) {
+            const ratingValueInput = document.getElementById(`rating_value_${section.id}`);
+            const ratingValue = ratingValueInput ? parseInt(ratingValueInput.value) : 0;
+            const sectionMaxRating = 5;
+            let sectionGlobalWeightContribution = 0;
+            if (totalRelativeWeightOpenSections > 0) {
+                 sectionGlobalWeightContribution = ((section.weight || 0) / totalRelativeWeightOpenSections) * openSectionsGlobalTotalWeight;
+            } else {
+                const visibleOpenSectionsCount = evaluationStructure.filter(s => {
+                    const sDiv = document.getElementById(`section-${s.id}`);
+                    return s.type === "open_questions_section" && sDiv && !sDiv.classList.contains('hidden');
+                }).length;
+                if (visibleOpenSectionsCount > 0) {
+                     sectionGlobalWeightContribution = openSectionsGlobalTotalWeight / visibleOpenSectionsCount;
+                }
+            }
+            if (sectionMaxRating > 0) {
+                totalWeightedScoreContribution += (ratingValue / sectionMaxRating) * sectionGlobalWeightContribution;
+            }
+            sumOfGlobalWeightsApplied += sectionGlobalWeightContribution;
+        }
+    });
+
+    const finalPercentage = sumOfGlobalWeightsApplied > 0.0001 ? (totalWeightedScoreContribution / sumOfGlobalWeightsApplied) * 100 : 0;
+    overallWeightedScoreEl.textContent = finalPercentage.toFixed(1);
+    return finalPercentage;
+}
+
+function updateSuggestedDecision() {
+    const overallScore = parseFloat(overallWeightedScoreEl.textContent) || 0;
+    const threshold = parseInt(overallThresholdInput.value) || 70;
+    const discussionThreshold = threshold - 20;
+
+    if (overallScore >= threshold) {
+        suggestedDecisionEl.textContent = "OK POUR ESSAI";
+        suggestedDecisionEl.style.color = "white"; suggestedDecisionEl.style.backgroundColor = "green";
+        if(finalDecisionSelect && !isReportModeActive) finalDecisionSelect.value = DECISION_STATUS.OK;
+    } else if (overallScore >= discussionThreshold) {
+        suggestedDecisionEl.textContent = "À DISCUTER / POTENTIEL AVEC RÉSERVES";
+        suggestedDecisionEl.style.color = "black"; suggestedDecisionEl.style.backgroundColor = "orange";
+        if(finalDecisionSelect && !isReportModeActive) finalDecisionSelect.value = DECISION_STATUS.DISCUSS;
+    } else {
+        suggestedDecisionEl.textContent = "NON POUR NOTRE ENTREPRISE";
+        suggestedDecisionEl.style.color = "white"; suggestedDecisionEl.style.backgroundColor = "red";
+        if(finalDecisionSelect && !isReportModeActive) finalDecisionSelect.value = DECISION_STATUS.REJECT;
+    }
+}
+
+function calculateScoresAndUpdateDecision() {
+    calculateQCMScore();
+    calculateOverallWeightedScore();
+    updateSuggestedDecision();
+}
+
+function collectAllData() {
+    currentEvaluationData = {
+      appVersion: APP_VERSION,
+      evaluatorName: evaluatorNameInput.value,
+      candidateNameEval: candidateNameEvalInput.value,
+      interviewDate: interviewDateInput.value,
+      globalNotes: globalNotesTextarea.value,
+      evaluationDate: new Date().toISOString(),
+      config: {
+        candidateQCMLevel: candidateQCMLevelSelect.value,
+        qcmGlobalWeightApplied: parseFloat(qcmGlobalWeightInput.value),
+        overallThresholdApplied: parseInt(overallThresholdInput.value),
+      },
+      qcmResults: calculateQCMScore(),
+      openSectionsRatings: {},
+      overallWeightedScore: parseFloat(overallWeightedScoreEl.textContent),
+      decisionAid: {
+        suggestedDecision: suggestedDecisionEl.textContent,
+        finalDecision: finalDecisionSelect.value,
+        decisionComments: decisionCommentsTextarea.value,
+      },
+      summaryPoints: {
+          strengths: strengthsNotesTextarea.value,
+          weaknesses: weaknessesNotesTextarea.value
+      },
+      sectionsNotes: {},
+      qcmExtendedResponsesDetails: {}
+    };
+
+    evaluationStructure.forEach(section => {
+        const sectionDiv = document.getElementById(`section-${section.id}`);
+        if (sectionDiv && !sectionDiv.classList.contains('hidden')) {
+            if (section.type === "open_questions_section") {
+                const ratingValueInput = document.getElementById(`rating_value_${section.id}`);
+                currentEvaluationData.openSectionsRatings[section.id] = {
+                    title: section.title,
+                    rating: ratingValueInput ? parseInt(ratingValueInput.value) : 0,
+                    weight: section.weight
+                };
+                section.questions.forEach(q => {
+                    const textareaEl = document.getElementById(`${section.id}_${q.id}_notes`);
+                    if (textareaEl) currentEvaluationData.sectionsNotes[`${section.id}_${q.id}_notes`] = textareaEl.value;
+                });
+            } else if (section.type === "qcm_section") {
+                section.questions.forEach(q => {
+                    const selectElement = document.getElementById(q.id);
+                    const weightInput = document.getElementById(`${q.id}_weight`);
+                    const labelElement = document.querySelector(`label[for="${q.id}"]`);
+                    const actualQuestionText = labelElement ? labelElement.textContent : q.text;
+                    currentEvaluationData.qcmExtendedResponsesDetails[q.id] = {
+                        questionText: actualQuestionText,
+                        candidateAnswer: selectElement ? selectElement.value : "",
+                        candidateAnswerText: selectElement && selectElement.value && q.options[selectElement.value] ? q.options[selectElement.value] : "Non répondu",
+                        correctAnswer: q.correctAnswer,
+                        correctAnswerText: q.options[q.correctAnswer],
+                        isCorrect: selectElement ? (selectElement.value === q.correctAnswer) : false,
+                        weightApplied: parseInt(weightInput ? weightInput.value : (q.weight || 1))
+                    };
+                });
+            }
+        }
+    });
+    return currentEvaluationData;
+}
+
+function getSavedEvaluations() {
+    const evaluations = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('evaluationUsinage_')) {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data && data.candidateNameEval && data.appVersion && (data.appVersion.startsWith("2.1") || data.appVersion.startsWith("2.2") || data.appVersion.startsWith("2.3"))) { // Updated version check
+                    evaluations.push({ key, ...data });
+                }
+            } catch (e) { console.error("Erreur de parsing pour la clé:", key, e); }
+        }
+    }
+    return evaluations.sort((a,b) => new Date(b.evaluationDate) - new Date(a.evaluationDate));
+}
+
+function displaySavedEvaluations() {
+    const evaluations = getSavedEvaluations();
+    savedEvaluationsListEl.innerHTML = '';
+    if (evaluations.length === 0) {
+        savedEvaluationsListEl.innerHTML = '<p>Aucune évaluation sauvegardée compatible trouvée.</p>';
+        return;
+    }
+    const ul = document.createElement('ul');
+    evaluations.forEach(ev => {
+        const li = document.createElement('li');
+        const qcmScoreText = ev.qcmResults ? `${ev.qcmResults.rawScore}/${ev.qcmResults.totalQuestions}` : `${ev.qcmScore || 'N/A'}/${ev.qcmTotal || 'N/A'}`;
+        const levelText = ev.config?.candidateQCMLevel ? ` (Niv: ${ev.config.candidateQCMLevel})` : "";
+        li.textContent = `${ev.candidateNameEval} - ${new Date(ev.evaluationDate).toLocaleString('fr-FR')} ${levelText} (QCM: ${qcmScoreText})`;
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = "Charger"; loadBtn.onclick = () => loadEvaluation(ev.key); li.appendChild(loadBtn);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = "Suppr."; deleteBtn.style.backgroundColor = "#ffc107";
+        deleteBtn.onclick = () => {
+            if (confirm(`Supprimer l'évaluation pour ${ev.candidateNameEval} du ${new Date(ev.evaluationDate).toLocaleString('fr-FR')}?`)) {
+                localStorage.removeItem(ev.key); displaySavedEvaluations();
+            }
+        };
+        li.appendChild(deleteBtn); ul.appendChild(li);
+    });
+    savedEvaluationsListEl.appendChild(ul);
+}
+
+function loadEvaluation(storageKey) {
+    const savedDataString = localStorage.getItem(storageKey);
+    if (!savedDataString) { alert("Données non trouvées."); return; }
+    try {
+        const data = JSON.parse(savedDataString);
+        if (!data.appVersion?.startsWith("2.3") && !data.appVersion?.startsWith("2.2") && !data.appVersion?.startsWith("2.1") && !confirm(`Cette sauvegarde provient d'une version (${data.appVersion || 'ancienne'}) différente de l'application (${APP_VERSION}). Continuer le chargement ?`)) {
+            return;
+        }
+        // Important: set level, then regenerate grid, then populate data
+        candidateQCMLevelSelect.value = data.config?.candidateQCMLevel || "debutant";
+        generateEvaluationGrid(); // This will also call initializeStarRatings
+        populateFormFromData(data);
+        calculateScoresAndUpdateDecision();
+        alert(`Évaluation pour ${data.candidateNameEval} chargée.`);
+    } catch (e) {
+        console.error("Erreur lors du chargement de l'évaluation :", e);
+        alert("Erreur lors du chargement des données.");
+    }
+}
+
+// --- FONCTIONS POUR LE MODE RAPPORT ---
+function activateReportModeUI() { // Renamed to avoid conflict with the boolean flag
+    isReportModeActive = true; // Set the global flag
+    document.body.classList.add('report-mode');
+
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+        if (el.type === 'button' && el.textContent.toLowerCase().includes("imprimer")) {
+            // Keep "Imprimer" button enabled
+        } else if (el.type === 'button') {
+            el.disabled = true; // Disable other buttons
+        } else { // For input fields
+            el.disabled = true;
+            if (el.tagName === 'TEXTAREA') el.readOnly = true;
+        }
+    });
+
+    if(initialSetupDiv) initialSetupDiv.classList.add('hidden');
+    if(actionButtonsDiv) {
+        Array.from(actionButtonsDiv.children).forEach(button => {
+            if (!button.textContent.toLowerCase().includes("imprimer")) {
+                button.classList.add('hidden');
+            } else {
+                button.classList.remove('hidden'); // Ensure "Imprimer" is visible
+                button.disabled = false; // Ensure "Imprimer" is enabled
+            }
+        });
+    }
+    if(savedEvaluationsSection) savedEvaluationsSection.classList.add('hidden');
+    if(clearAllSavedBtn) clearAllSavedBtn.classList.add('hidden');
+
+    // Remove existing message if any, then add new one
+    const existingMsg = document.getElementById("reportModeMessage");
+    if (existingMsg) existingMsg.remove();
+
+    const reportMessageDiv = document.createElement('div');
+    reportMessageDiv.id = "reportModeMessage";
+    reportMessageDiv.innerHTML = `MODE RAPPORT (CONSULTATION SEULE)`;
+    document.body.insertBefore(reportMessageDiv, document.body.firstChild);
+
+    evaluationStructure.forEach(section => {
+        if (section.type === "qcm_section" && section.questions) {
+            section.questions.forEach(q => {
+                const selectEl = document.getElementById(q.id);
+                if (selectEl && selectEl.value) updateQCMIndicator(selectEl, q.correctAnswer);
+            });
+        }
+    });
+    console.log("Mode rapport activé (UI).");
+}
+
+function populateFormFromData(data) {
+    if (!data) return;
+    evaluatorNameInput.value = data.evaluatorName || "";
+    candidateNameEvalInput.value = data.candidateNameEval || "";
+    interviewDateInput.value = data.interviewDate ? data.interviewDate.split('T')[0] : "";
+    globalNotesTextarea.value = data.globalNotes || "";
+
+    qcmGlobalWeightInput.value = data.config?.qcmGlobalWeightApplied || 0.6;
+    overallThresholdInput.value = data.config?.overallThresholdApplied || 70;
+    finalDecisionSelect.value = data.decisionAid?.finalDecision || DECISION_STATUS.NA;
+    decisionCommentsTextarea.value = data.decisionAid?.decisionComments || "";
+    strengthsNotesTextarea.value = data.summaryPoints?.strengths || "";
+    weaknessesNotesTextarea.value = data.summaryPoints?.weaknesses || "";
+
+    if (data.sectionsNotes) {
+        for (const key in data.sectionsNotes) {
+            const el = document.getElementById(key); if (el) el.value = data.sectionsNotes[key];
+        }
+    }
+    if (data.openSectionsRatings) {
+        for (const sectionId in data.openSectionsRatings) {
+            const ratingValue = data.openSectionsRatings[sectionId].rating;
+            const hiddenInput = document.getElementById(`rating_value_${sectionId}`);
+            const starContainer = document.getElementById(`rating_${sectionId}`);
+            const summarySpan = document.getElementById(`summary_rating_${sectionId}`);
+            if (hiddenInput) hiddenInput.value = ratingValue;
+            if (starContainer) updateStarDisplay(starContainer.querySelectorAll('span'), ratingValue);
+            if (summarySpan) summarySpan.textContent = `${ratingValue}/5`;
+        }
+    }
+    if (data.qcmExtendedResponsesDetails) {
+        for (const qId in data.qcmExtendedResponsesDetails) {
+            const qData = data.qcmExtendedResponsesDetails[qId];
+            const selectEl = document.getElementById(qId);
+            const weightEl = document.getElementById(`${qId}_weight`);
+            if (selectEl) selectEl.value = qData.candidateAnswer;
+            if (weightEl) weightEl.value = qData.weightApplied || 1;
+            // updateQCMIndicator will be called by activateReportModeUI or calculateScores
+        }
+    }
+}
+
+// --- GESTION DES ÉVÉNEMENTS ET INITIALISATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reportModeParam = urlParams.get('mode') === 'report';
+    const reportDataParam = urlParams.get('data');
+    let dataForReport = null;
+
+    if (reportModeParam && reportDataParam) {
+        isReportModeActive = true; // Set flag early
+        try {
+            const decodedJsonString = decodeURIComponent(atob(reportDataParam));
+            dataForReport = JSON.parse(decodedJsonString);
+            if (dataForReport.config && dataForReport.config.candidateQCMLevel) {
+                candidateQCMLevelSelect.value = dataForReport.config.candidateQCMLevel;
+            }
+        } catch (e) {
+            console.error("Erreur chargement données URL:", e);
+            alert("Impossible de charger les données pour le mode rapport.");
+            isReportModeActive = false; // Revert if error
+        }
+    } else if (reportModeParam) { // mode=report mais pas de data (ou data corrompue)
+        isReportModeActive = true;
+    }
+
+    // Toujours générer la grille, le niveau sera soit celui par défaut, soit celui de l'URL
+    generateEvaluationGrid();
+
+    if (isReportModeActive) {
+        if (dataForReport) {
+            populateFormFromData(dataForReport);
+        }
+        activateReportModeUI(); // Activer l'UI du mode rapport
+        calculateScoresAndUpdateDecision(); // Calculer les scores basés sur les données chargées
+    } else { // Initialisation normale
+        candidateQCMLevelSelect.value = "debutant"; // Default
+        // generateEvaluationGrid(); // Already called above, but call again if level changed to default
+        if(candidateQCMLevelSelect.value !== "debutant") generateEvaluationGrid(); // if URL did not set level
+        else calculateScoresAndUpdateDecision(); // If default level, just calc scores
+        displaySavedEvaluations();
+    }
+
+    // Listeners conditionnels (ne pas les ajouter en mode rapport pour certains)
+    candidateQCMLevelSelect.addEventListener('change', () => {
+        if (!isReportModeActive) generateEvaluationGrid();
+    });
+
+    if (!isReportModeActive) {
+        calculateGlobalScoreBtn.addEventListener('click', calculateScoresAndUpdateDecision);
+        qcmGlobalWeightInput.addEventListener('input', calculateScoresAndUpdateDecision);
+        overallThresholdInput.addEventListener('input', calculateScoresAndUpdateDecision);
+        saveEvaluationBtn.addEventListener('click', function() {
+            if (!candidateNameEvalInput.value.trim()) { alert("Veuillez entrer le nom du candidat."); candidateNameEvalInput.focus(); return; }
+            const dataToSave = collectAllData();
+            const key = `evaluationUsinage_${candidateNameEvalInput.value.replace(/\s+/g, '_')}_${new Date(dataToSave.evaluationDate).getTime()}`;
+            try { localStorage.setItem(key, JSON.stringify(dataToSave)); alert(`Évaluation sauvegardée: ${key}`); displaySavedEvaluations(); }
+            catch (e) { console.error("Erreur sauvegarde LS:", e); alert("Erreur sauvegarde."); }
+        });
+        exportEvaluationBtn.addEventListener('click', function() {
+            if (!candidateNameEvalInput.value.trim()) { alert("Nom du candidat requis."); candidateNameEvalInput.focus(); return; }
+            const dataToExport = collectAllData();
+            const jsonString = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url;
+            a.download = `evaluation_usinage_${candidateNameEvalInput.value.replace(/\s+/g, '_')}_${dataToExport.config.candidateQCMLevel}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        });
+        exportCsvBtn.addEventListener('click', function() {
+            if (!candidateNameEvalInput.value.trim()) { alert("Nom du candidat requis."); candidateNameEvalInput.focus(); return; }
+            const data = collectAllData();
+            let csvContent = "Catégorie,ID Question/Info,Libellé,Valeur/Réponse Candidat,Réponse Attendue,Statut Évaluation,Poids Relatif/Appliqué,Tags\n";
+            csvContent += `"Informations Générales","Nom Évaluateur","${data.evaluatorName}","","","","",""\n`;
+            csvContent += `"Informations Générales","Nom Candidat","${data.candidateNameEval}","","","",""\n`;
+            csvContent += `"Informations Générales","Date Entretien","${data.interviewDate}","","","",""\n`;
+            csvContent += `"Informations Générales","Niveau QCM Choisi","${data.config.candidateQCMLevel}","","","",""\n`;
+            csvContent += `"Informations Générales","Notes Globales","${(data.globalNotes || "").replace(/"/g, '""')}","","","",""\n`;
+            evaluationStructure.forEach(section => {
+                const sectionDiv = document.getElementById(`section-${section.id}`);
+                if (sectionDiv && !sectionDiv.classList.contains('hidden')) {
+                    if (section.type === "open_questions_section") {
+                        section.questions.forEach(q => {
+                            const notes = data.sectionsNotes[`${section.id}_${q.id}_notes`] || "";
+                            csvContent += `"${section.title}","${q.id}","${q.text.replace(/"/g, '""')}","${notes.replace(/"/g, '""')}","${(q.correctAnswerDisplay || '').replace(/"/g, '""')}","","${section.weight || ''}","${(q.tags || []).join(';')}"\n`;
+                        });
+                        const rating = data.openSectionsRatings[section.id]?.rating || "N/A";
+                        csvContent += `"${section.title}","ÉVALUATION SECTION ${section.id}","Note (sur 5)","${rating}","","","Poids Section: ${data.openSectionsRatings[section.id]?.weight || 'N/A'}",""\n`;
+                    }
+                }
+            });
+            if (data.qcmExtendedResponsesDetails) {
+                for (const qId in data.qcmExtendedResponsesDetails) {
+                    const qResp = data.qcmExtendedResponsesDetails[qId];
+                    let qcmSectionTitleForExport = "QCM";
+                    for(const esSection of evaluationStructure){ if(esSection.type === "qcm_section" && esSection.questions.find(q_def => q_def.id === qId)){ qcmSectionTitleForExport = esSection.title; break; }}
+                    const originalQCM = evaluationStructure.flatMap(s => s.questions || []).find(q_def => q_def.id === qId);
+                    const evalStatus = qResp.isCorrect ? "OK" : "PAS OK";
+                    csvContent += `"${qcmSectionTitleForExport}","${qId}","${qResp.questionText.replace(/"/g, '""')}","${qResp.candidateAnswerText.replace(/"/g, '""')}","${qResp.correctAnswerText.replace(/"/g, '""')}","${evalStatus}","${qResp.weightApplied}","${(originalQCM?.tags || []).join(';')}"\n`;
+                }
+            }
+            csvContent += `\n"Résumé QCM Global","Score Brut","${data.qcmResults.rawScore}/${data.qcmResults.totalQuestions}","","","",""\n`;
+            csvContent += `"Résumé QCM Global","Score Pondéré","${data.qcmResults.score}/${data.qcmResults.maxWeightedScore}","","","Poids Global QCM: ${data.config.qcmGlobalWeightApplied}",""\n`;
+            csvContent += `\n"Synthèse","Points Forts","${(data.summaryPoints.strengths || "").replace(/"/g, '""')}","","","",""\n`;
+            csvContent += `"Synthèse","Points à Améliorer","${(data.summaryPoints.weaknesses || "").replace(/"/g, '""')}","","","",""\n`;
+            csvContent += `\n"Décision Finale","Score Global Pondéré (%)","${data.overallWeightedScore.toFixed(1)}","","","",""\n`;
+            csvContent += `"Décision Finale","Seuil Appliqué (%)","${data.config.overallThresholdApplied}","","","",""\n`;
+            csvContent += `"Décision Finale","Avis Suggéré","${data.decisionAid.suggestedDecision}","","","",""\n`;
+            csvContent += `"Décision Finale","Décision Finale Évaluateur","${data.decisionAid.finalDecision}","","","",""\n`;
+            csvContent += `"Décision Finale","Commentaires Décision","${(data.decisionAid.decisionComments || "").replace(/"/g, '""')}","","","",""\n`;
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url;
+            a.download = `evaluation_usinage_${data.candidateNameEval.replace(/\s+/g, '_')}_${data.config.candidateQCMLevel}_details.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        });
+        if (generateReportLinkBtn) {
+            generateReportLinkBtn.addEventListener('click', function() {
+                if (!candidateNameEvalInput.value.trim()) { alert("Nom du candidat requis."); candidateNameEvalInput.focus(); return; }
+                const dataToShare = collectAllData(); const jsonString = JSON.stringify(dataToShare);
+                try {
+                    const base64Data = btoa(encodeURIComponent(jsonString));
+                    const reportUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?mode=report&data=${base64Data}`;
+                    prompt("Copiez ce lien pour le partage en lecture seule (Ctrl+C / Cmd+C) :", reportUrl);
+                } catch (e) {
+                    console.error("Erreur encodage URL:", e);
+                    alert("Erreur lors de la création du lien de rapport. Les données sont peut-être trop volumineuses.");
+                }
+            });
+        }
+        clearAllSavedBtn.addEventListener('click', () => {
+            if (confirm("Effacer TOUTES les évaluations sauvegardées ? Action irréversible.")) {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith('evaluationUsinage_')) keysToRemove.push(key); }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                displaySavedEvaluations(); alert("Toutes les évaluations sauvegardées ont été effacées.");
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>
